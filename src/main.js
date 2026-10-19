@@ -42,6 +42,7 @@ const elements = {
 
 let scene, camera, renderer, controls;
 let sceneResizeObserver;
+let followedPosition;
 const bodyMeshes = new Map();
 const orbitLines = new Map();
 const labelSprites = new Map();
@@ -267,6 +268,17 @@ function updateScene() {
     }
     line.geometry.dispose(); line.geometry = new THREE.BufferGeometry().setFromPoints(points);
   });
+  const selectedBody = bodyById.get(state.selectedId) ?? moons.find((moon) => moon.id === state.selectedId);
+  const followBody = selectedBody?.type === 'moon' ? bodyById.get(selectedBody.parent) : selectedBody;
+  const followedMesh = followBody ? bodyMeshes.get(followBody.id) : bodyMeshes.get(state.selectedId);
+  if (followedMesh) {
+    if (state.playing && followedPosition) {
+      const delta = followedMesh.position.clone().sub(followedPosition);
+      camera.position.add(delta);
+      controls.target.add(delta);
+    }
+    followedPosition = followedMesh.position.clone();
+  }
   updateDetails();
 }
 
@@ -296,18 +308,26 @@ function updateDetails() {
 function focusBody(body) {
   if (!body) return;
   const mesh = bodyMeshes.get(body.id) ?? bodyMeshes.get(body.parent); if (!mesh) return;
-  controls.target.copy(mesh.position);
-  const radius = Math.max(visualRadius(body), 0.000000001);
-  const distance = Math.max(radius * 1.05, 0.00000002);
-  const towardSun = mesh.position.clone().normalize();
+  const parentBody = body.type === 'moon' ? bodyById.get(body.parent) : body;
+  const parentMesh = parentBody ? bodyMeshes.get(parentBody.id) : mesh;
+  const center = parentMesh?.position.clone() ?? mesh.position.clone();
+  const localBodies = body.type === 'star' ? [] : [...moons].filter((moon) => moon.parent === parentBody?.id);
+  const localPositions = localBodies.map((moon) => bodyMeshes.get(moon.id)?.position).filter(Boolean);
+  const localExtent = localPositions.reduce((extent, position) => Math.max(extent, position.distanceTo(center)), 0);
+  const radiusExtent = Math.max(visualRadius(parentBody ?? body), visualRadius(body));
+  const framingExtent = Math.max(localExtent, radiusExtent * 8, 0.00000002);
+  controls.target.copy(center);
+  const distance = Math.max(framingExtent * 2.2, 0.00000008);
+  const towardSun = center.clone().normalize();
   if (towardSun.lengthSq() < 0.000001) towardSun.set(0, 0, 1);
-  camera.position.copy(mesh.position).sub(towardSun.multiplyScalar(distance));
+  camera.position.copy(center).sub(towardSun.multiplyScalar(distance));
   camera.near = Math.max(distance / 10000000, 0.000000000001);
   camera.far = 3000;
   camera.updateProjectionMatrix();
   controls.minDistance = 0;
   controls.maxDistance = Infinity;
   controls.update();
+  followedPosition = (parentMesh ?? mesh).position.clone();
   refreshIdentification();
 }
 
