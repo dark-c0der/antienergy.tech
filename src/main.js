@@ -48,6 +48,7 @@ const orbitLines = new Map();
 const labelSprites = new Map();
 const selectionMarkers = new Map();
 const asteroidBelt = { mesh: null, glow: null, particles: [] };
+const sunCorona = { layers: [], texture: null };
 const axialRotationHours = {
   sun: 648,
   mercury: 1407.6,
@@ -125,6 +126,7 @@ function initScene() {
   scene.add(sunGroup);
   addStars();
   addAsteroidBelt();
+  addSunCorona();
   solarSystemBodies.forEach((body) => addBody(body));
   moons.forEach((body) => addBody(body));
   updateScene();
@@ -223,6 +225,54 @@ function updateAsteroidBelt() {
   asteroidBelt.glow.visible = true;
 }
 
+function addSunCorona() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const context = canvas.getContext('2d');
+  const gradient = context.createRadialGradient(128, 128, 8, 128, 128, 128);
+  gradient.addColorStop(0, 'rgba(255, 255, 224, 1)');
+  gradient.addColorStop(0.18, 'rgba(255, 241, 166, 0.98)');
+  gradient.addColorStop(0.42, 'rgba(255, 167, 48, 0.72)');
+  gradient.addColorStop(0.7, 'rgba(255, 83, 24, 0.2)');
+  gradient.addColorStop(1, 'rgba(255, 47, 0, 0)');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, 256, 256);
+  sunCorona.texture = new THREE.CanvasTexture(canvas);
+
+  [1, 1.55, 2.2].forEach((multiplier, index) => {
+    const layer = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: sunCorona.texture,
+      color: index === 0 ? 0xfff0aa : index === 1 ? 0xffa32f : 0xff4c18,
+      transparent: true,
+      opacity: index === 0 ? 0.95 : index === 1 ? 0.5 : 0.24,
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      depthWrite: false
+    }));
+    layer.userData.multiplier = multiplier;
+    layer.userData.phase = index * 1.8;
+    sunCorona.layers.push(layer);
+    scene.add(layer);
+  });
+}
+
+function updateSunCorona(timeSeconds = 0) {
+  if (!sunCorona.layers.length) return;
+  const sun = bodyById.get('sun');
+  const radius = visualRadius(sun);
+  const pulse = 1 + Math.sin(timeSeconds * 1.35) * 0.035;
+  sunCorona.layers.forEach((layer, index) => {
+    const multiplier = layer.userData.multiplier;
+    const phase = layer.userData.phase;
+    const breathing = 1 + Math.sin(timeSeconds * (1.05 + index * 0.18) + phase) * 0.045;
+    const size = Math.max(radius * multiplier * 2.15 * pulse * breathing, state.scale === 'true' ? 0.11 : 8);
+    layer.position.set(0, 0, 0);
+    layer.scale.set(size, size, 1);
+    layer.material.rotation = timeSeconds * (index % 2 ? -0.025 : 0.018);
+  });
+}
+
 function addStars() {
   const positions = new Float32Array(1800 * 3);
   for (let i = 0; i < positions.length; i += 3) {
@@ -257,8 +307,8 @@ function addBody(body) {
   const material = new THREE.MeshStandardMaterial({
     color: body.color,
     emissive: body.color,
-    emissiveIntensity: body.type === 'star' ? 0.8 : 0.045,
-    roughness: body.type === 'star' ? 0.7 : 0.9,
+    emissiveIntensity: body.type === 'star' ? 2.8 : 0.045,
+    roughness: body.type === 'star' ? 0.38 : 0.9,
     metalness: 0,
     transparent: false,
     opacity: 1,
@@ -331,6 +381,7 @@ function makeLabel(text, emphasis = false) {
 
 function updateScene() {
   updateAsteroidBelt();
+  updateSunCorona(performance.now() / 1000);
   [...solarSystemBodies, ...moons].forEach((body) => {
     const mesh = bodyMeshes.get(body.id); const pos = positionFor(body, state.date); const vector = scenePosition(pos);
     mesh.position.copy(vector);
@@ -544,6 +595,7 @@ function animate() {
   const deltaSeconds = Math.min((now - previousFrameTime) / 1000, 0.1);
   previousFrameTime = now;
   spinBodies(deltaSeconds);
+  updateSunCorona(now / 1000);
   if (state.playing) { state.date = new Date(state.date.getTime() + state.speed * deltaSeconds * 86400000); syncClock(); updateScene(); }
   controls?.update(); updateCameraRange(); updateScaleBar(); renderer?.render(scene, camera);
 }
