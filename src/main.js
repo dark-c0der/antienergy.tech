@@ -3,9 +3,9 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/exampl
 import { solarSystemBodies, bodyById, formatRadius } from './data/solarSystem.js';
 import { loadJplMoons } from './data/moons.js';
 import { exoplanets } from './data/exoplanets.js';
-import { positionFor, relativePositionFor, distanceAu, formatAu } from './ephemeris/engine.js';
+import { positionFor, distanceAu, formatAu } from './ephemeris/engine.js';
 
-const state = { date: new Date('2025-01-01T00:00:00Z'), selectedId: 'earth', focusedSystemId: null, category: 'planets', playing: false, speed: 1, scale: 'true', showOrbits: true, showLabels: true };
+const state = { date: new Date('2025-01-01T00:00:00Z'), selectedId: 'earth', focusedSystemId: null, category: 'planets', playing: false, speed: 1, scale: 'true', showLabels: true };
 let moons = [];
 const elements = {
   scene: document.getElementById('scene'),
@@ -44,7 +44,6 @@ let scene, camera, renderer, controls;
 let sceneResizeObserver;
 let followedPosition;
 const bodyMeshes = new Map();
-const orbitLines = new Map();
 const labelSprites = new Map();
 const selectionMarkers = new Map();
 const asteroidBelt = { meshes: [], glow: null, particles: [], lastDate: null, lastScale: null };
@@ -194,7 +193,7 @@ function addAsteroidBelt() {
 function updateAsteroidBelt() {
   if (!asteroidBelt.meshes.length) return;
   asteroidBelt.meshes.forEach((mesh) => {
-    mesh.visible = state.showOrbits;
+    mesh.visible = true;
   });
   if (asteroidBelt.lastDate === state.date.getTime() && asteroidBelt.lastScale === state.scale) return;
   const elapsedDays = (state.date.getTime() - Date.parse('2000-01-01T12:00:00Z')) / 86400000;
@@ -326,8 +325,6 @@ function addBody(body) {
   if (body.type === 'star') sunGroup.add(mesh);
   if (body.id === 'uranus') mesh.rotation.z = THREE.MathUtils.degToRad(82.2);
   if (body.id === 'saturn') addSaturnRings(mesh);
-  const orbit = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: body.color, transparent: true, opacity: 0.14 }));
-  orbitLines.set(body.id, orbit); scene.add(orbit);
   const label = body.type === 'moon' ? null : makeLabel(body.name, body.id === 'earth' || body.id === 'mars');
   labelSprites.set(body.id, label);
   if (label) scene.add(label);
@@ -417,19 +414,6 @@ function updateScene() {
     const markerSize = Math.max(radius * 2.4, labelSize * 0.008);
     marker.scale.set(markerSize, markerSize, markerSize);
     marker.visible = body.type === 'planet' || body.id === state.selectedId;
-    const line = orbitLines.get(body.id);
-    const isFocusedSystem = !state.focusedSystemId
-      || body.id === state.focusedSystemId
-      || (body.parent === state.focusedSystemId && (!Number.isFinite(body.a) || body.a <= 0.02));
-    line.visible = state.showOrbits && body.id !== 'sun' && isFocusedSystem;
-    const points = [];
-    const parentPosition = body.type === 'moon' ? scenePosition(positionFor(bodyById.get(body.parent), state.date)) : null;
-    for (let index = 0; index <= 96; index += 1) {
-      const sample = new Date(state.date.getTime() + (index / 96) * (body.period ?? body.periodDays ?? 365) * 86400000);
-      if (body.type === 'moon' && parentPosition) points.push(parentPosition.clone().add(scenePosition(relativePositionFor(body, sample))));
-      else points.push(scenePosition(positionFor(body, sample)));
-    }
-    line.geometry.dispose(); line.geometry = new THREE.BufferGeometry().setFromPoints(points);
   });
   const selectedBody = bodyById.get(state.selectedId) ?? moons.find((moon) => moon.id === state.selectedId);
   const followBody = selectedBody?.type === 'moon' ? bodyById.get(selectedBody.parent) : selectedBody;
@@ -621,7 +605,7 @@ function bindUi() {
   document.getElementById('step-back').addEventListener('click', () => { state.date = new Date(state.date.getTime() - 86400000); syncClock(); updateScene(); }); document.getElementById('step-forward').addEventListener('click', () => { state.date = new Date(state.date.getTime() + 86400000); syncClock(); updateScene(); });
   document.getElementById('jump-now').addEventListener('click', () => { state.date = new Date(); syncClock(); updateScene(); showToast('Simulation clock set to the current UTC date.'); });
   elements.timeSlider.addEventListener('input', () => { state.date = new Date(Date.parse('2025-01-01T00:00:00Z') + Number(elements.timeSlider.value) * 86400000); syncClock(); updateScene(); });
-  document.getElementById('speed-select').addEventListener('change', (event) => { state.speed = Number(event.target.value); }); document.getElementById('orbit-toggle').addEventListener('change', (event) => { state.showOrbits = event.target.checked; updateScene(); }); document.getElementById('label-toggle').addEventListener('change', (event) => { state.showLabels = event.target.checked; updateScene(); });
+  document.getElementById('speed-select').addEventListener('change', (event) => { state.speed = Number(event.target.value); }); document.getElementById('label-toggle').addEventListener('change', (event) => { state.showLabels = event.target.checked; updateScene(); });
   document.getElementById('scale-select').addEventListener('change', (event) => { state.scale = event.target.value; elements.scaleIndicator.textContent = state.scale === 'true' ? 'TRUE SCALE' : 'EXPLORATION SCALE'; updateScene(); });
   document.getElementById('reset-camera').addEventListener('click', () => {
     state.focusedSystemId = null;
