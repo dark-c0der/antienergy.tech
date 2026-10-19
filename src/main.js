@@ -47,7 +47,7 @@ const bodyMeshes = new Map();
 const orbitLines = new Map();
 const labelSprites = new Map();
 const selectionMarkers = new Map();
-const asteroidBelt = { meshes: [], glow: null, particles: [] };
+const asteroidBelt = { meshes: [], glow: null, particles: [], lastDate: null, lastScale: null };
 const sunCorona = { layers: [], texture: null };
 const axialRotationHours = {
   sun: 648,
@@ -79,7 +79,7 @@ const textureUrls = {
 const AU_KM = 149597870.7;
 const TRUE_SCALE_DIVISOR = 0.5;
 const EARTH_RADIUS_KM = 6371;
-const ASTEROID_SAMPLE_COUNT = 1200;
+const ASTEROID_SAMPLE_COUNT = 800;
 
 function seededRandom(seed) {
   const value = Math.sin(seed * 12.9898) * 43758.5453;
@@ -153,7 +153,7 @@ function addAsteroidBelt() {
   const variantCount = 5;
   const perVariant = Math.ceil(ASTEROID_SAMPLE_COUNT / variantCount);
   for (let variant = 0; variant < variantCount; variant += 1) {
-    const geometry = new THREE.IcosahedronGeometry(1, 2);
+    const geometry = new THREE.IcosahedronGeometry(1, 1);
     const positions = geometry.getAttribute('position');
     for (let vertex = 0; vertex < positions.count; vertex += 1) {
       const jitter = 0.91 + seededRandom(variant * 101 + vertex * 13) * 0.18;
@@ -212,6 +212,7 @@ function addAsteroidBelt() {
 
 function updateAsteroidBelt() {
   if (!asteroidBelt.meshes.length) return;
+  if (asteroidBelt.lastDate === state.date.getTime() && asteroidBelt.lastScale === state.scale) return;
   const dummy = new THREE.Object3D();
   const elapsedDays = (state.date.getTime() - Date.parse('2000-01-01T12:00:00Z')) / 86400000;
   asteroidBelt.particles.forEach((asteroid, index) => {
@@ -237,6 +238,8 @@ function updateAsteroidBelt() {
     mesh.visible = state.showOrbits;
     mesh.material.opacity = state.scale === 'true' ? 0.78 : 0.92;
   });
+  asteroidBelt.lastDate = state.date.getTime();
+  asteroidBelt.lastScale = state.scale;
   asteroidBelt.glow.position.set(0, 0, 0);
   const sunRadius = visualRadius(bodyById.get('sun'));
   const glowSize = state.scale === 'true' ? Math.max(sunRadius * 24, 0.22) : sunRadius * 1.7;
