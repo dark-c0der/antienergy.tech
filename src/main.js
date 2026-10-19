@@ -41,6 +41,7 @@ const elements = {
 };
 
 let scene, camera, renderer, controls;
+let sceneResizeObserver;
 const bodyMeshes = new Map();
 const orbitLines = new Map();
 const labelSprites = new Map();
@@ -85,6 +86,8 @@ function initScene() {
   renderer.setSize(elements.scene.clientWidth, elements.scene.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   elements.scene.append(renderer.domElement);
+  sceneResizeObserver = new ResizeObserver(resize);
+  sceneResizeObserver.observe(elements.scene);
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.06;
@@ -313,7 +316,14 @@ function onSceneClick(event) {
   const raycaster = new THREE.Raycaster(); raycaster.setFromCamera(pointer, camera); const hit = raycaster.intersectObjects([...bodyMeshes.values()])[0]; if (hit?.object.userData.bodyId) selectBody(hit.object.userData.bodyId);
 }
 
-function resize() { if (!renderer) return; camera.aspect = elements.scene.clientWidth / elements.scene.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(elements.scene.clientWidth, elements.scene.clientHeight); }
+function resize() {
+  if (!renderer) return;
+  const width = Math.max(1, Math.round(elements.scene.clientWidth));
+  const height = Math.max(1, Math.round(elements.scene.clientHeight));
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height, false);
+}
 function refreshIdentification() {
   [...solarSystemBodies, ...moons].forEach((body) => {
     const mesh = bodyMeshes.get(body.id);
