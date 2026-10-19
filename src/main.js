@@ -138,9 +138,9 @@ function initScene() {
 function addAsteroidBelt() {
   const geometry = new THREE.IcosahedronGeometry(1, 1);
   const material = new THREE.MeshStandardMaterial({
-    color: 0x9b8c79,
-    emissive: 0x6d5740,
-    emissiveIntensity: 0.55,
+    color: 0xd0b28b,
+    emissive: 0x8c5f2f,
+    emissiveIntensity: 1.1,
     roughness: 1,
     metalness: 0,
     transparent: true,
@@ -206,8 +206,8 @@ function updateAsteroidBelt() {
     position.applyAxisAngle(new THREE.Vector3(0, 1, 0), asteroid.node);
     dummy.position.copy(scenePosition(position));
     const displayRadius = state.scale === 'true'
-      ? 0.004 + asteroid.size * 0.003
-      : 0.035 + asteroid.size * 0.025;
+      ? 0.012 + asteroid.size * 0.008
+      : 0.05 + asteroid.size * 0.035;
     dummy.scale.setScalar(displayRadius);
     dummy.rotation.set(asteroid.node, meanAnomaly, asteroid.inclination);
     dummy.updateMatrix();
@@ -235,6 +235,9 @@ function addStars() {
 
 function visualRadius(body) {
   if (state.scale === 'true') {
+    if (body.type === 'star' && Number.isFinite(body.radiusKm)) {
+      return Math.max(body.radiusKm / AU_KM / TRUE_SCALE_DIVISOR, 0.03);
+    }
     if (Number.isFinite(body.radiusKm)) return body.radiusKm / AU_KM / TRUE_SCALE_DIVISOR;
     return body.type === 'moon' ? 0.0001 : body.radiusKm / 696340 * 10;
   }
