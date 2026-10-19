@@ -139,22 +139,25 @@ function initScene() {
 
 function addAsteroidBelt() {
   const material = new THREE.MeshStandardMaterial({
-    color: 0xd0b28b,
-    emissive: 0x8c5f2f,
-    emissiveIntensity: 1.1,
-    roughness: 1,
+    color: 0x8c8174,
+    emissive: 0x1c1712,
+    emissiveIntensity: 0.08,
+    roughness: 0.96,
     metalness: 0,
-    transparent: true,
-    opacity: 0.86
+    flatShading: true,
+    transparent: false,
+    opacity: 1,
+    depthWrite: true,
+    depthTest: true
   });
   const variantCount = 5;
   const perVariant = Math.ceil(ASTEROID_SAMPLE_COUNT / variantCount);
   for (let variant = 0; variant < variantCount; variant += 1) {
-    const geometry = new THREE.IcosahedronGeometry(1, 1);
+    const geometry = new THREE.IcosahedronGeometry(1, 2);
     const positions = geometry.getAttribute('position');
     for (let vertex = 0; vertex < positions.count; vertex += 1) {
-      const jitter = 0.72 + seededRandom(variant * 101 + vertex * 13) * 0.52;
-      positions.setXYZ(vertex, positions.getX(vertex) * jitter, positions.getY(vertex) * (0.82 + seededRandom(variant * 67 + vertex) * 0.42), positions.getZ(vertex) * (0.78 + seededRandom(variant * 43 + vertex) * 0.48));
+      const jitter = 0.91 + seededRandom(variant * 101 + vertex * 13) * 0.18;
+      positions.setXYZ(vertex, positions.getX(vertex) * jitter, positions.getY(vertex) * (0.92 + seededRandom(variant * 67 + vertex) * 0.14), positions.getZ(vertex) * (0.9 + seededRandom(variant * 43 + vertex) * 0.18));
     }
     positions.needsUpdate = true;
     geometry.computeVertexNormals();
@@ -173,9 +176,9 @@ function addAsteroidBelt() {
     const node = random(4) * Math.PI * 2;
     const phase = random(5) * Math.PI * 2;
     const periodDays = Math.sqrt(radiusAu ** 3) * 365.256;
-    const size = 0.65 + random(6) * 1.9;
+    const radiusKm = 0.08 + (random(6) ** 2.8) * 34;
     const variant = index % variantCount;
-    asteroidBelt.particles.push({ radiusAu, eccentricity, inclination, node, phase, periodDays, size, variant, localIndex: Math.floor(index / variantCount) });
+    asteroidBelt.particles.push({ radiusAu, eccentricity, inclination, node, phase, periodDays, radiusKm, variant, localIndex: Math.floor(index / variantCount) });
     dummy.position.set(0, 0, 0);
     dummy.scale.setScalar(size);
     dummy.updateMatrix();
@@ -221,10 +224,10 @@ function updateAsteroidBelt() {
     position.applyAxisAngle(new THREE.Vector3(0, 1, 0), asteroid.node);
     dummy.position.copy(scenePosition(position));
     const displayRadius = state.scale === 'true'
-      ? 0.012 + asteroid.size * 0.008
-      : 0.05 + asteroid.size * 0.035;
-    const aspect = 0.72 + seededRandom(index * 5.7) * 0.5;
-    dummy.scale.set(displayRadius * (1.15 + asteroid.size * 0.08), displayRadius * aspect, displayRadius * (0.82 + seededRandom(index * 8.1) * 0.48));
+      ? asteroid.radiusKm / AU_KM / TRUE_SCALE_DIVISOR
+      : Math.max(0.0008, asteroid.radiusKm / EARTH_RADIUS_KM * 0.55);
+    const aspect = 0.86 + seededRandom(index * 5.7) * 0.24;
+    dummy.scale.set(displayRadius * (0.92 + seededRandom(index * 7.4) * 0.2), displayRadius * aspect, displayRadius * (0.88 + seededRandom(index * 8.1) * 0.22));
     dummy.rotation.set(asteroid.node + seededRandom(index * 3.1), meanAnomaly + seededRandom(index * 4.4), asteroid.inclination + seededRandom(index * 6.2));
     dummy.updateMatrix();
     asteroidBelt.meshes[asteroid.variant].setMatrixAt(asteroid.localIndex, dummy.matrix);
