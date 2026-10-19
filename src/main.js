@@ -45,7 +45,6 @@ let sceneResizeObserver;
 let followedPosition;
 const bodyMeshes = new Map();
 const labelSprites = new Map();
-const selectionMarkers = new Map();
 const asteroidBelt = { meshes: [], glow: null, particles: [], lastDate: null, lastScale: null };
 const sunCorona = { layers: [], texture: null };
 const axialRotationHours = {
@@ -334,15 +333,6 @@ function addBody(body) {
   const label = body.type === 'moon' ? null : makeLabel(body.name, body.id === 'earth' || body.id === 'mars');
   labelSprites.set(body.id, label);
   if (label) scene.add(label);
-  const marker = new THREE.Mesh(
-    new THREE.RingGeometry(1, 1.18, 32),
-    new THREE.MeshBasicMaterial({ color: 0x9fc5ff, side: THREE.DoubleSide, transparent: true, opacity: 0.95, depthTest: false })
-  );
-  marker.visible = false;
-  marker.material.color.set(body.id === 'earth' ? 0x6bc7ff : body.id === 'mars' ? 0xff927d : 0x9fc5ff);
-  marker.userData.bodyId = body.id;
-  selectionMarkers.set(body.id, marker);
-  scene.add(marker);
 }
 
 function applySurfaceMaterial(body, material) {
@@ -414,12 +404,6 @@ function updateScene() {
       label.position.copy(vector).add(labelOffset);
       label.visible = state.showLabels;
     }
-    const marker = selectionMarkers.get(body.id);
-    marker.position.copy(vector);
-    marker.quaternion.copy(camera.quaternion);
-    const markerSize = Math.max(radius * 2.4, labelSize * 0.008);
-    marker.scale.set(markerSize, markerSize, markerSize);
-    marker.visible = body.type === 'planet' || body.id === state.selectedId;
   });
   const selectedBody = bodyById.get(state.selectedId) ?? moons.find((moon) => moon.id === state.selectedId);
   const followBody = selectedBody?.type === 'moon' ? bodyById.get(selectedBody.parent) : selectedBody;
@@ -514,8 +498,7 @@ function refreshIdentification() {
   [...solarSystemBodies, ...moons].forEach((body) => {
     const mesh = bodyMeshes.get(body.id);
     const label = labelSprites.get(body.id);
-    const marker = selectionMarkers.get(body.id);
-    if (!mesh || !label || !marker) return;
+    if (!mesh || !label) return;
     const radius = visualRadius(body);
     const cameraDistance = camera.position.distanceTo(mesh.position);
     const labelSize = state.scale === 'true' ? Math.max(cameraDistance * 0.02, 0.00000001) : 9;
@@ -537,11 +520,6 @@ function refreshIdentification() {
     }
     label.position.copy(mesh.position).add(labelOffset);
     label.visible = state.showLabels && (body.type !== 'moon' || body.id === state.selectedId);
-    marker.position.copy(mesh.position);
-    marker.quaternion.copy(camera.quaternion);
-    const markerSize = Math.max(radius * 2.4, labelSize * 0.008);
-    marker.scale.set(markerSize, markerSize, markerSize);
-    marker.visible = body.type === 'planet' || body.id === state.selectedId;
   });
 }
 function updateCameraRange() {
