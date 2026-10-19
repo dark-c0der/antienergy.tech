@@ -38,8 +38,13 @@ const knownMoonInclinations = {
   'jupiter-europa': 0.466,
   'jupiter-ganymede': 0.177,
   'jupiter-callisto': 0.192,
+  'jupiter-himalia': 27.5,
+  'jupiter-carme': 165.0,
+  'jupiter-ananke': 148.9,
+  'jupiter-pasiphae': 145.8,
   'saturn-titan': 0.348,
   'saturn-iapetus': 15.47,
+  'saturn-phoebe': 175.3,
   'uranus-miranda': 4.338,
   'neptune-triton': 156.865
 };
