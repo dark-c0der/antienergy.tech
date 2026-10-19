@@ -212,6 +212,10 @@ function addAsteroidBelt() {
 
 function updateAsteroidBelt() {
   if (!asteroidBelt.meshes.length) return;
+  asteroidBelt.meshes.forEach((mesh) => {
+    mesh.visible = state.showOrbits;
+    mesh.material.opacity = state.scale === 'true' ? 0.78 : 0.92;
+  });
   if (asteroidBelt.lastDate === state.date.getTime() && asteroidBelt.lastScale === state.scale) return;
   const dummy = new THREE.Object3D();
   const elapsedDays = (state.date.getTime() - Date.parse('2000-01-01T12:00:00Z')) / 86400000;
@@ -235,8 +239,6 @@ function updateAsteroidBelt() {
   });
   asteroidBelt.meshes.forEach((mesh) => {
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.visible = state.showOrbits;
-    mesh.material.opacity = state.scale === 'true' ? 0.78 : 0.92;
   });
   asteroidBelt.lastDate = state.date.getTime();
   asteroidBelt.lastScale = state.scale;
