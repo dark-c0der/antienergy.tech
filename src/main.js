@@ -139,6 +139,8 @@ function addAsteroidBelt() {
   const geometry = new THREE.IcosahedronGeometry(1, 1);
   const material = new THREE.MeshStandardMaterial({
     color: 0x9b8c79,
+    emissive: 0x6d5740,
+    emissiveIntensity: 0.55,
     roughness: 1,
     metalness: 0,
     transparent: true,
@@ -204,8 +206,8 @@ function updateAsteroidBelt() {
     position.applyAxisAngle(new THREE.Vector3(0, 1, 0), asteroid.node);
     dummy.position.copy(scenePosition(position));
     const displayRadius = state.scale === 'true'
-      ? 0.00022 + asteroid.size * 0.00016
-      : 0.02 + asteroid.size * 0.016;
+      ? 0.004 + asteroid.size * 0.003
+      : 0.035 + asteroid.size * 0.025;
     dummy.scale.setScalar(displayRadius);
     dummy.rotation.set(asteroid.node, meanAnomaly, asteroid.inclination);
     dummy.updateMatrix();
@@ -216,7 +218,7 @@ function updateAsteroidBelt() {
   asteroidBelt.mesh.material.opacity = state.scale === 'true' ? 0.78 : 0.92;
   asteroidBelt.glow.position.set(0, 0, 0);
   const sunRadius = visualRadius(bodyById.get('sun'));
-  const glowSize = state.scale === 'true' ? Math.max(sunRadius * 5.5, 0.035) : sunRadius * 1.45;
+  const glowSize = state.scale === 'true' ? Math.max(sunRadius * 24, 0.22) : sunRadius * 1.7;
   asteroidBelt.glow.scale.set(glowSize, glowSize, 1);
   asteroidBelt.glow.visible = true;
 }
