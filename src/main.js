@@ -5,7 +5,7 @@ import { loadJplMoons } from './data/moons.js';
 import { exoplanets } from './data/exoplanets.js';
 import { positionFor, distanceAu, formatAu } from './ephemeris/engine.js';
 
-const state = { date: new Date('2025-01-01T00:00:00Z'), selectedId: 'earth', category: 'planets', playing: false, speed: 1, scale: 'true', showOrbits: true, showLabels: true };
+const state = { date: new Date('2025-01-01T00:00:00Z'), selectedId: 'earth', focusedSystemId: null, category: 'planets', playing: false, speed: 1, scale: 'true', showOrbits: true, showLabels: true };
 let moons = [];
 const elements = {
   scene: document.getElementById('scene'),
@@ -112,6 +112,9 @@ function initScene() {
   scene.add(new THREE.AmbientLight(0x7986a8, 0.55));
   scene.add(new THREE.HemisphereLight(0x9ebcff, 0x080b12, 0.42));
   const light = new THREE.PointLight(0xffdfaa, 4, 0, 1.5); scene.add(light);
+  const fillLight = new THREE.DirectionalLight(0xb8d1ff, 1.2);
+  fillLight.position.set(12, 18, 10);
+  scene.add(fillLight);
   scene.add(sunGroup);
   addStars();
   solarSystemBodies.forEach((body) => addBody(body));
@@ -154,8 +157,8 @@ function addBody(body) {
   const geometry = new THREE.SphereGeometry(baseRadius, body.type === 'star' ? 48 : 32, body.type === 'star' ? 48 : 32);
   const material = new THREE.MeshStandardMaterial({
     color: body.color,
-    emissive: body.type === 'star' ? body.color : 0x000000,
-    emissiveIntensity: body.type === 'star' ? 0.8 : 0,
+    emissive: body.color,
+    emissiveIntensity: body.type === 'star' ? 0.8 : 0.045,
     roughness: body.type === 'star' ? 0.7 : 0.9,
     metalness: 0,
     transparent: false,
@@ -173,7 +176,7 @@ function addBody(body) {
   if (body.type === 'star') sunGroup.add(mesh);
   if (body.id === 'uranus') mesh.rotation.z = THREE.MathUtils.degToRad(82.2);
   if (body.id === 'saturn') addSaturnRings(mesh);
-  const orbit = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: body.color, transparent: true, opacity: 0.28 }));
+  const orbit = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: body.color, transparent: true, opacity: 0.14 }));
   orbitLines.set(body.id, orbit); scene.add(orbit);
   const label = body.type === 'moon' ? null : makeLabel(body.name, body.id === 'earth' || body.id === 'mars');
   labelSprites.set(body.id, label);
@@ -262,7 +265,10 @@ function updateScene() {
     const markerSize = Math.max(radius * 2.4, labelSize * 0.008);
     marker.scale.set(markerSize, markerSize, markerSize);
     marker.visible = body.type === 'planet' || body.id === state.selectedId;
-    const line = orbitLines.get(body.id); line.visible = state.showOrbits && body.id !== 'sun'; const points = [];
+    const line = orbitLines.get(body.id);
+    const isFocusedSystem = !state.focusedSystemId || body.id === state.focusedSystemId || body.parent === state.focusedSystemId;
+    line.visible = state.showOrbits && body.id !== 'sun' && isFocusedSystem;
+    const points = [];
     for (let index = 0; index <= 96; index += 1) {
       const sample = new Date(state.date.getTime() + (index / 96) * (body.period ?? body.periodDays ?? 365) * 86400000); points.push(scenePosition(positionFor(body, sample)));
     }
@@ -309,6 +315,7 @@ function focusBody(body) {
   if (!body) return;
   const mesh = bodyMeshes.get(body.id) ?? bodyMeshes.get(body.parent); if (!mesh) return;
   const parentBody = body.type === 'moon' ? bodyById.get(body.parent) : body;
+  state.focusedSystemId = parentBody?.id ?? body.id;
   const parentMesh = parentBody ? bodyMeshes.get(parentBody.id) : mesh;
   const center = parentMesh?.position.clone() ?? mesh.position.clone();
   const localBodies = body.type === 'star' ? [] : [...moons].filter((moon) => moon.parent === parentBody?.id);
@@ -449,6 +456,7 @@ function bindUi() {
   document.getElementById('speed-select').addEventListener('change', (event) => { state.speed = Number(event.target.value); }); document.getElementById('orbit-toggle').addEventListener('change', (event) => { state.showOrbits = event.target.checked; updateScene(); }); document.getElementById('label-toggle').addEventListener('change', (event) => { state.showLabels = event.target.checked; updateScene(); });
   document.getElementById('scale-select').addEventListener('change', (event) => { state.scale = event.target.value; elements.scaleIndicator.textContent = state.scale === 'true' ? 'TRUE SCALE' : 'EXPLORATION SCALE'; updateScene(); });
   document.getElementById('reset-camera').addEventListener('click', () => {
+    state.focusedSystemId = null;
     camera.position.set(0, 70, 90);
     camera.near = 0.0000001;
     camera.far = 3000;
@@ -457,6 +465,7 @@ function bindUi() {
     controls.minDistance = 0;
     controls.maxDistance = Infinity;
     controls.update();
+    updateScene();
     refreshIdentification();
   });
   document.getElementById('focus-selected').addEventListener('click', () => focusBody(bodyById.get(state.selectedId) ?? moons.find((moon) => moon.id === state.selectedId)));
