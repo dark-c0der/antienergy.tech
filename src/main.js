@@ -422,15 +422,25 @@ function focusBody(body) {
   const parentBody = body.type === 'moon' ? bodyById.get(body.parent) : body;
   state.focusedSystemId = parentBody?.id ?? body.id;
   const parentMesh = parentBody ? bodyMeshes.get(parentBody.id) : mesh;
-  const center = parentMesh?.position.clone() ?? mesh.position.clone();
+  const isMoon = body.type === 'moon' && parentMesh && mesh !== parentMesh;
+  const bodyPosition = mesh.position.clone();
+  const parentPosition = parentMesh?.position.clone() ?? bodyPosition.clone();
+  const parentDistance = isMoon ? bodyPosition.distanceTo(parentPosition) : 0;
+  const center = isMoon
+    ? parentPosition.clone().add(bodyPosition).multiplyScalar(0.5)
+    : parentPosition;
   const localBodies = body.type === 'star' ? [] : [...moons].filter((moon) => moon.parent === parentBody?.id && (!Number.isFinite(moon.a) || moon.a <= 0.02));
   const localPositions = localBodies.map((moon) => bodyMeshes.get(moon.id)?.position).filter(Boolean);
   const localExtent = localPositions.reduce((extent, position) => Math.max(extent, position.distanceTo(center)), 0);
   const radiusExtent = Math.max(visualRadius(parentBody ?? body), visualRadius(body));
-  const framingExtent = Math.max(localExtent, radiusExtent * 8, 0.00000002);
+  const framingExtent = Math.max(
+    isMoon ? parentDistance * 0.72 : localExtent,
+    radiusExtent * 8,
+    0.00000002
+  );
   controls.target.copy(center);
-  const distance = Math.max(framingExtent * 2.2, 0.00000008);
-  const viewDirection = center.clone().normalize();
+  const distance = Math.max(framingExtent * (isMoon ? 2.4 : 2.2), 0.00000008);
+  const viewDirection = (isMoon ? bodyPosition.clone().sub(parentPosition) : center.clone()).normalize();
   if (viewDirection.lengthSq() < 0.000001) viewDirection.set(0, 0.55, 1);
   else viewDirection.y = viewDirection.y >= 0 ? Math.max(viewDirection.y, 0.55) : Math.min(viewDirection.y, -0.55);
   viewDirection.normalize();
