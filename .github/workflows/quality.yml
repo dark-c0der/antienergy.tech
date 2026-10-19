@@ -1,0 +1,30 @@
+name: Quality
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 3 * * 1'
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required files
+        run: |
+          test -f index.html
+          test -f src/main.js
+          test -f src/ephemeris/engine.js
+          test -f docs/data-sources.md
+      - name: Check for accidental secrets
+        run: |
+          ! grep -RInE '(API_KEY|SECRET|PASSWORD|TOKEN)=' --exclude-dir=.git .
+      - name: Serve static site
+        run: |
+          python3 -m http.server 4173 >/tmp/antienergy-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          sleep 2
+          curl --fail --silent http://127.0.0.1:4173/ | grep -q 'antienergy.tech'

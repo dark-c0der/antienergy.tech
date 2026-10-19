@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#05070c" />
+    <meta name="description" content="Antienergy is a source-aware interactive explorer for the known Solar System." />
+    <title>antienergy.tech — Real-data universe explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./src/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Antienergy home">
+        <span class="brand-mark" aria-hidden="true">◌</span>
+        <span>antienergy<span class="brand-domain">.tech</span></span>
+      </a>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        <span id="data-status">Loading catalogue</span>
+      </div>
+      <nav class="topnav" aria-label="Primary navigation">
+        <button class="nav-button active" data-view="explorer">Explorer</button>
+        <button class="nav-button" data-view="catalogue">Catalogue</button>
+        <button class="nav-button" data-view="exoplanets">Exoplanets</button>
+        <button class="nav-button" data-view="methodology">Methodology</button>
+        <button class="nav-button" data-view="about">About</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="view-explorer" class="view active" aria-labelledby="explorer-heading">
+        <div class="hero-copy">
+          <p class="eyebrow">REAL DATA / OPEN CATALOGUES / NO LOGIN</p>
+          <h1 id="explorer-heading">A living map of<br /><em>known worlds.</em></h1>
+          <p class="hero-subtitle">Explore a source-aware model of our Solar System. The clock is yours to control; the data is always labelled.</p>
+        </div>
+        <div class="explorer-grid">
+          <aside class="panel explorer-panel" aria-label="Object explorer">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">OBJECT EXPLORER</span>
+                <h2>Solar System</h2>
+              </div>
+              <span id="object-count" class="count-badge">9</span>
+            </div>
+            <label class="search-field">
+              <span class="sr-only">Search bodies</span>
+              <span aria-hidden="true">⌕</span>
+              <input id="body-search" type="search" placeholder="Search planets and moons" autocomplete="off" />
+            </label>
+            <div class="object-tabs" role="tablist" aria-label="Object categories">
+              <button class="object-tab active" data-category="planets" role="tab">Planets</button>
+              <button class="object-tab" data-category="moons" role="tab">Moons</button>
+              <button class="object-tab" data-category="dwarf" role="tab">Dwarf worlds</button>
+            </div>
+            <div id="object-list" class="object-list" role="listbox" aria-label="Solar System objects"></div>
+            <div class="panel-footnote">460 JPL satellite entries are included. Published physical radii stay proportional; missing radii remain unavailable rather than being invented.</div>
+          </aside>
+
+          <div class="scene-shell">
+            <div id="scene" class="scene" aria-label="Interactive 3D Solar System"></div>
+            <div class="scene-overlay scene-overlay-top">
+              <div class="legend">
+                <span class="legend-chip"><i class="legend-line ephemeris"></i>ephemeris / model</span>
+                <span class="legend-chip"><i class="legend-line orbit"></i>orbital path</span>
+              </div>
+              <div class="scene-actions">
+                <button id="reset-camera" class="icon-button" title="Reset camera" aria-label="Reset camera">↺</button>
+                <button id="focus-selected" class="icon-button" title="Focus selected body" aria-label="Focus selected body">◎</button>
+              </div>
+            </div>
+            <div class="scene-overlay scene-overlay-bottom">
+              <div class="scene-scale">
+                <span id="scale-bar" class="scale-bar"></span>
+                <span id="scale-bar-label" class="scale-bar-label">1 AU</span>
+              </div>
+              <span id="scale-indicator" class="scale-indicator">TRUE PHYSICAL SCALE</span>
+              <span id="frame-indicator" class="frame-indicator">HELIOCENTRIC · ECLIPTIC J2000</span>
+            </div>
+            <div id="scene-loading" class="scene-loading">
+              <div class="loader-ring"></div>
+              <span>Preparing the ephemeris view</span>
+            </div>
+          </div>
+
+          <aside class="panel detail-panel" aria-live="polite">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">SELECTED BODY</span>
+                <h2 id="detail-name">Earth</h2>
+              </div>
+              <span id="detail-type" class="type-badge">PLANET</span>
+            </div>
+            <p id="detail-description" class="detail-description">Our home world, shown at physical radius and source-backed orbital distance.</p>
+            <div class="detail-stat-grid">
+              <div class="detail-stat"><span>Parent</span><strong id="detail-parent">Sun</strong></div>
+              <div class="detail-stat"><span>Radius</span><strong id="detail-radius">6,371 km</strong></div>
+              <div class="detail-stat"><span>Distance</span><strong id="detail-distance">—</strong></div>
+              <div class="detail-stat"><span>Orbital period</span><strong id="detail-period">365.25 days</strong></div>
+            </div>
+            <div class="position-block">
+              <span class="panel-kicker">CURRENT POSITION</span>
+              <div class="position-row"><span>X</span><strong id="detail-x">—</strong><em>AU</em></div>
+              <div class="position-row"><span>Y</span><strong id="detail-y">—</strong><em>AU</em></div>
+              <div class="position-row"><span>Z</span><strong id="detail-z">—</strong><em>AU</em></div>
+            </div>
+            <div class="provenance">
+              <span class="panel-kicker">PROVENANCE</span>
+              <p id="detail-source">JPL Solar System Dynamics · orbital-element fallback</p>
+              <p id="detail-coverage">Model epoch: J2000.0 · positions are illustrative approximations between sampled states.</p>
+            </div>
+            <button id="open-moon-view" class="secondary-button">Open local system <span>↗</span></button>
+          </aside>
+        </div>
+        <section class="timeline panel">
+          <div class="timeline-heading">
+            <div>
+              <span class="panel-kicker">SIMULATION CLOCK</span>
+              <strong id="simulation-date">01 JAN 2025 · 00:00 UTC</strong>
+            </div>
+            <div class="clock-actions">
+              <button id="jump-now" class="text-button">Now</button>
+              <button id="step-back" class="icon-button small" aria-label="Step backward one day">−</button>
+              <button id="play-toggle" class="play-button" aria-label="Play simulation">▶</button>
+              <button id="step-forward" class="icon-button small" aria-label="Step forward one day">+</button>
+            </div>
+          </div>
+          <input id="time-slider" class="time-slider" type="range" min="-365" max="365" value="0" step="1" aria-label="Simulation date offset in days" />
+          <div class="timeline-scale"><span>01 JAN 2024</span><span>SIMULATION DATE · UTC</span><span>01 JAN 2026</span></div>
+          <div class="timeline-footer">
+            <label class="speed-control">Speed
+              <select id="speed-select">
+                <option value="0.25">¼ day / sec</option>
+                <option value="1" selected>1 day / sec</option>
+                <option value="7">1 week / sec</option>
+                <option value="30">1 month / sec</option>
+                <option value="365">1 year / sec</option>
+              </select>
+            </label>
+            <label class="toggle-row"><input id="orbit-toggle" type="checkbox" checked /><span class="toggle"></span>Orbital paths</label>
+            <label class="toggle-row"><input id="label-toggle" type="checkbox" checked /><span class="toggle"></span>Labels</label>
+            <label class="scale-select">Display
+              <select id="scale-select">
+                <option value="true" selected>True physical scale</option>
+                <option value="exploration">Exploration scale</option>
+              </select>
+            </label>
+          </div>
+        </section>
+      </section>
+
+      <section id="view-catalogue" class="view catalogue-view" aria-labelledby="catalogue-heading">
+        <div class="page-heading"><p class="eyebrow">SOURCE-BACKED CATALOGUE</p><h1 id="catalogue-heading">Solar System objects</h1><p>Known planets, dwarf worlds, and planetary satellites from the JPL Solar System Dynamics catalogue.</p></div>
+        <div id="catalogue-grid" class="catalogue-grid"></div>
+      </section>
+
+      <section id="view-exoplanets" class="view catalogue-view" aria-labelledby="exoplanet-heading">
+        <div class="page-heading"><p class="eyebrow">NASA EXOPLANET ARCHIVE</p><h1 id="exoplanet-heading">Worlds beyond our Sun</h1><p>A searchable sample of confirmed planets published by the NASA Exoplanet Archive. This is a catalogue, not a complete map of the universe.</p></div>
+        <div class="catalogue-toolbar"><label class="search-field wide"><span aria-hidden="true">⌕</span><input id="exoplanet-search" type="search" placeholder="Search planet or host star" /></label><span id="exoplanet-count" class="muted-label"></span></div>
+        <div id="exoplanet-grid" class="exoplanet-grid"></div>
+      </section>
+
+      <section id="view-methodology" class="view methodology-view" aria-labelledby="method-heading">
+        <div class="page-heading"><p class="eyebrow">METHOD / LIMITS / SOURCES</p><h1 id="method-heading">Truth before spectacle.</h1><p>Antienergy separates published astronomical data from visual interpretation so you can tell what is measured, modelled, derived, or unavailable.</p></div>
+        <div class="method-grid">
+          <article class="method-card"><span class="method-number">01</span><h2>Data provenance</h2><p>Solar-system metadata and orbital parameters are sourced from NASA/JPL Solar System Dynamics. The app keeps units, epoch, frame, source, and coverage alongside each value.</p><a href="https://ssd.jpl.nasa.gov/" target="_blank" rel="noreferrer">JPL Solar System Dynamics ↗</a></article>
+          <article class="method-card"><span class="method-number">02</span><h2>What you see</h2><p>The default explorer uses one physical kilometre conversion for the Sun, planets, and published satellite radii. It is an honest size relationship, so small bodies can be hard to see in the whole-system view.</p><p class="callout">Use Focus selected to move the camera into a body-scale view. Exploration scale is available only as an explicitly adjusted display mode.</p></article>
+          <article class="method-card"><span class="method-number">03</span><h2>Ephemeris status</h2><p>The runtime attempts JPL Horizons for supported state vectors. When live access is unavailable, a versioned orbital-element fallback keeps the site usable and labels the result as an approximation.</p><a href="https://ssd-api.jpl.nasa.gov/doc/horizons.html" target="_blank" rel="noreferrer">Horizons API documentation ↗</a></article>
+          <article class="method-card"><span class="method-number">04</span><h2>Catalogue boundaries</h2><p>“Known” means published and catalogued. A missing moon or exoplanet measurement does not mean the object does not exist; it means this interface does not have a reliable value to show.</p><a href="https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html" target="_blank" rel="noreferrer">NASA Exoplanet Archive TAP ↗</a></article>
+        </div>
+      </section>
+
+      <section id="view-about" class="view about-view" aria-labelledby="about-heading">
+        <div class="page-heading">
+          <p class="eyebrow">THE PERSON BEHIND THE ORBIT</p>
+          <h1 id="about-heading">Built to make space feel closer.</h1>
+          <p>Antienergy is an educational Solar System explorer made to encourage curiosity, careful reading of scientific data, and a better understanding of scale.</p>
+        </div>
+        <div class="about-grid">
+          <article class="about-card about-profile">
+            <span class="method-number">PROJECT</span>
+            <h2>Antienergy Observatory</h2>
+            <p>A source-aware, interactive learning experience for exploring the Solar System.</p>
+            <span class="about-private">Personal developer details are intentionally not published.</span>
+          </article>
+          <article class="about-card">
+            <span class="method-number">PROJECT LINK</span>
+            <h2>GitHub</h2>
+            <p>Explore the public source, documentation, and deployment history for this educational project.</p>
+            <a href="https://github.com/dark-c0der/antienergy.tech" target="_blank" rel="noreferrer">Public repository ↗</a>
+          </article>
+          <article class="about-card about-notice">
+            <span class="method-number">EDUCATIONAL NOTICE</span>
+            <h2>For education only.</h2>
+            <p>This website is made only for educational and exploratory purposes. It is not a substitute for official astronomical data, mission planning, navigation, or scientific publication.</p>
+          </article>
+          <article class="about-card about-credit">
+            <span class="method-number">MADE WITH</span>
+            <h2>Artificial intelligence</h2>
+            <p>Built with assistance from GitHub Copilot, with the data sources, limitations, and modelling choices documented openly in the methodology section.</p>
+            <a href="https://github.com/features/copilot" target="_blank" rel="noreferrer">GitHub Copilot ↗</a>
+          </article>
+        </div>
+      </section>
+    </main>
+    <div id="toast" class="toast" role="status"></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
