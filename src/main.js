@@ -440,8 +440,8 @@ async function start() {
   renderCatalogue();
   renderExoplanets();
   syncClock();
-  elements.dataStatus.textContent = `${moons.length} satellites · JPL catalogue`;
-  setTimeout(() => showToast(`${moons.length} JPL satellite entries loaded. Physical radius is preserved where published; unavailable radii are not fabricated.`), 900);
+  elements.dataStatus.textContent = `${moons.length} bundled records · JPL snapshot`;
+  setTimeout(() => showToast(`${moons.length} bundled JPL satellite records loaded. JPL's current summary lists 461 planetary satellites including Earth's Moon; this bundled snapshot is not a live count.`), 900);
 }
 
 start();

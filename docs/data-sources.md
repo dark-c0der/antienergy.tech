@@ -9,7 +9,7 @@ Antienergy is designed around public, official astronomical sources:
 
 ## Satellite catalogue snapshot
 
-The bundled satellite dataset is generated from the JPL [mean-elements table](https://ssd.jpl.nasa.gov/sats/elem/) and [physical-parameters table](https://ssd.jpl.nasa.gov/sats/phys_par/). It includes 460 JPL satellite entries across Earth, Mars, Jupiter, Saturn, Uranus, Neptune, and Pluto in the retrieved catalogue snapshot. The app does not silently drop provisional designations.
+The bundled satellite dataset is generated from the JPL [mean-elements table](https://ssd.jpl.nasa.gov/sats/elem/) and [physical-parameters table](https://ssd.jpl.nasa.gov/sats/phys_par/). This retrieved snapshot contains 460 bundled JPL satellite records across Earth, Mars, Jupiter, Saturn, Uranus, Neptune, and Pluto. JPL's current summary reports 461 planetary satellites including Earth's Moon; the discovery table and live summary can differ as new discoveries are confirmed, so the app labels 460 as a bundled snapshot rather than a live total. The app does not silently drop provisional designations.
 
 The physical-parameters table publishes mean radii for only a subset of satellites. Those radii are retained in kilometres and used directly for the rendered size ratio. Entries without a published radius remain in the catalogue and scene as data records, but are rendered at the minimum geometric marker and explicitly show “Unavailable”; no radius is fabricated.
 
