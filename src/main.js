@@ -420,7 +420,7 @@ function animate() {
   const deltaSeconds = Math.min((now - previousFrameTime) / 1000, 0.1);
   previousFrameTime = now;
   spinBodies(deltaSeconds);
-  if (state.playing) { state.date = new Date(state.date.getTime() + state.speed * 1000 * 86400000 / 60); syncClock(); updateScene(); }
+  if (state.playing) { state.date = new Date(state.date.getTime() + state.speed * deltaSeconds * 86400000); syncClock(); updateScene(); }
   controls?.update(); updateCameraRange(); updateScaleBar(); renderer?.render(scene, camera);
 }
 function syncClock() { elements.simulationDate.textContent = state.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).toUpperCase() + ' · ' + state.date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC'; elements.timeSlider.value = String(Math.round((state.date.getTime() - Date.parse('2025-01-01T00:00:00Z')) / 86400000)); }
