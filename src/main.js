@@ -76,6 +76,7 @@ const textureUrls = {
 };
 const AU_KM = 149597870.7;
 const TRUE_SCALE_DIVISOR = 0.5;
+const EARTH_RADIUS_KM = 6371;
 
 function initScene() {
   scene = new THREE.Scene();
@@ -108,9 +109,9 @@ function initScene() {
   controls.mouseButtons.MIDDLE = THREE.MOUSE.DOLLY;
   controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
   controls.addEventListener('change', refreshIdentification);
-  scene.add(new THREE.AmbientLight(0x7986a8, 0.3));
-  scene.add(new THREE.HemisphereLight(0x9ebcff, 0x080b12, 0.22));
-  const light = new THREE.PointLight(0xffdfaa, 3, 0, 1.5); scene.add(light);
+  scene.add(new THREE.AmbientLight(0x7986a8, 0.55));
+  scene.add(new THREE.HemisphereLight(0x9ebcff, 0x080b12, 0.42));
+  const light = new THREE.PointLight(0xffdfaa, 4, 0, 1.5); scene.add(light);
   scene.add(sunGroup);
   addStars();
   solarSystemBodies.forEach((body) => addBody(body));
@@ -139,9 +140,8 @@ function visualRadius(body) {
     return body.type === 'moon' ? 0.0001 : body.radiusKm / 696340 * 10;
   }
   if (body.type === 'star') return 5.5;
-  if (body.type === 'planet') return Math.max(0.45, Math.log10(body.radiusKm) - 2.3);
-  if (body.type === 'moon' && Number.isFinite(body.radiusKm)) return body.radiusKm / 696340 * 5.5;
-  return 0.0001;
+  if (Number.isFinite(body.radiusKm)) return Math.max(body.type === 'moon' ? 0.025 : 0.08, body.radiusKm / EARTH_RADIUS_KM * 0.55);
+  return 0.025;
 }
 
 function scenePosition(position) {
@@ -259,7 +259,7 @@ function updateScene() {
     const marker = selectionMarkers.get(body.id);
     marker.position.copy(vector);
     marker.quaternion.copy(camera.quaternion);
-    const markerSize = Math.max(radius * 3.4, labelSize * 0.45);
+    const markerSize = Math.max(radius * 2.4, labelSize * 0.008);
     marker.scale.set(markerSize, markerSize, markerSize);
     marker.visible = body.type === 'planet' || body.id === state.selectedId;
     const line = orbitLines.get(body.id); line.visible = state.showOrbits && body.id !== 'sun'; const points = [];
@@ -318,9 +318,11 @@ function focusBody(body) {
   const framingExtent = Math.max(localExtent, radiusExtent * 8, 0.00000002);
   controls.target.copy(center);
   const distance = Math.max(framingExtent * 2.2, 0.00000008);
-  const towardSun = center.clone().normalize();
-  if (towardSun.lengthSq() < 0.000001) towardSun.set(0, 0, 1);
-  camera.position.copy(center).sub(towardSun.multiplyScalar(distance));
+  const viewDirection = center.clone().normalize();
+  if (viewDirection.lengthSq() < 0.000001) viewDirection.set(0, 0.55, 1);
+  else viewDirection.y = viewDirection.y >= 0 ? Math.max(viewDirection.y, 0.55) : Math.min(viewDirection.y, -0.55);
+  viewDirection.normalize();
+  camera.position.copy(center).sub(viewDirection.multiplyScalar(distance));
   camera.near = Math.max(distance / 10000000, 0.000000000001);
   camera.far = 3000;
   camera.updateProjectionMatrix();
@@ -373,7 +375,7 @@ function refreshIdentification() {
     label.visible = state.showLabels && (body.type !== 'moon' || body.id === state.selectedId);
     marker.position.copy(mesh.position);
     marker.quaternion.copy(camera.quaternion);
-    const markerSize = Math.max(radius * 3.4, labelSize * 0.45);
+    const markerSize = Math.max(radius * 2.4, labelSize * 0.008);
     marker.scale.set(markerSize, markerSize, markerSize);
     marker.visible = body.type === 'planet' || body.id === state.selectedId;
   });
