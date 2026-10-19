@@ -3,7 +3,7 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/exampl
 import { solarSystemBodies, bodyById, formatRadius } from './data/solarSystem.js';
 import { loadJplMoons } from './data/moons.js';
 import { exoplanets } from './data/exoplanets.js';
-import { positionFor, distanceAu, formatAu } from './ephemeris/engine.js';
+import { positionFor, relativePositionFor, distanceAu, formatAu } from './ephemeris/engine.js';
 
 const state = { date: new Date('2025-01-01T00:00:00Z'), selectedId: 'earth', focusedSystemId: null, category: 'planets', playing: false, speed: 1, scale: 'true', showOrbits: true, showLabels: true };
 let moons = [];
@@ -271,8 +271,11 @@ function updateScene() {
       || (body.parent === state.focusedSystemId && (!Number.isFinite(body.a) || body.a <= 0.02));
     line.visible = state.showOrbits && body.id !== 'sun' && isFocusedSystem;
     const points = [];
+    const parentPosition = body.type === 'moon' ? scenePosition(positionFor(bodyById.get(body.parent), state.date)) : null;
     for (let index = 0; index <= 96; index += 1) {
-      const sample = new Date(state.date.getTime() + (index / 96) * (body.period ?? body.periodDays ?? 365) * 86400000); points.push(scenePosition(positionFor(body, sample)));
+      const sample = new Date(state.date.getTime() + (index / 96) * (body.period ?? body.periodDays ?? 365) * 86400000);
+      if (body.type === 'moon' && parentPosition) points.push(parentPosition.clone().add(scenePosition(relativePositionFor(body, sample))));
+      else points.push(scenePosition(positionFor(body, sample)));
     }
     line.geometry.dispose(); line.geometry = new THREE.BufferGeometry().setFromPoints(points);
   });

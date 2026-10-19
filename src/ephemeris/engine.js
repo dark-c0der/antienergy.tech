@@ -81,6 +81,10 @@ export function positionFor(body, date) {
   return { x: local.x + parentPosition.x, y: local.y + parentPosition.y, z: local.z + parentPosition.z };
 }
 
+export function relativePositionFor(body, date) {
+  return fallbackPosition(body, date);
+}
+
 export function distanceAu(position) {
   return Math.sqrt(position.x ** 2 + position.y ** 2 + position.z ** 2);
 }
