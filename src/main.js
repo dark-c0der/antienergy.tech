@@ -266,7 +266,9 @@ function updateScene() {
     marker.scale.set(markerSize, markerSize, markerSize);
     marker.visible = body.type === 'planet' || body.id === state.selectedId;
     const line = orbitLines.get(body.id);
-    const isFocusedSystem = !state.focusedSystemId || body.id === state.focusedSystemId || body.parent === state.focusedSystemId;
+    const isFocusedSystem = !state.focusedSystemId
+      || body.id === state.focusedSystemId
+      || (body.parent === state.focusedSystemId && (!Number.isFinite(body.a) || body.a <= 0.02));
     line.visible = state.showOrbits && body.id !== 'sun' && isFocusedSystem;
     const points = [];
     for (let index = 0; index <= 96; index += 1) {
@@ -318,7 +320,7 @@ function focusBody(body) {
   state.focusedSystemId = parentBody?.id ?? body.id;
   const parentMesh = parentBody ? bodyMeshes.get(parentBody.id) : mesh;
   const center = parentMesh?.position.clone() ?? mesh.position.clone();
-  const localBodies = body.type === 'star' ? [] : [...moons].filter((moon) => moon.parent === parentBody?.id);
+  const localBodies = body.type === 'star' ? [] : [...moons].filter((moon) => moon.parent === parentBody?.id && (!Number.isFinite(moon.a) || moon.a <= 0.02));
   const localPositions = localBodies.map((moon) => bodyMeshes.get(moon.id)?.position).filter(Boolean);
   const localExtent = localPositions.reduce((extent, position) => Math.max(extent, position.distanceTo(center)), 0);
   const radiusExtent = Math.max(visualRadius(parentBody ?? body), visualRadius(body));
