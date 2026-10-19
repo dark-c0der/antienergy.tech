@@ -78,8 +78,7 @@ const textureUrls = {
 const AU_KM = 149597870.7;
 const TRUE_SCALE_DIVISOR = 0.5;
 const EARTH_RADIUS_KM = 6371;
-const ASTEROID_SAMPLE_COUNT = 240;
-const ASTEROID_VARIANT_COUNT = 12;
+const ASTEROID_SAMPLE_COUNT = 180;
 
 function seededRandom(seed) {
   const value = Math.sin(seed * 12.9898) * 43758.5453;
@@ -138,55 +137,62 @@ function initScene() {
 }
 
 function addAsteroidBelt() {
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x76685d,
-    emissive: 0x080604,
-    emissiveIntensity: 0.02,
-    roughness: 1,
-    metalness: 0,
-    flatShading: true,
-    transparent: false,
-    opacity: 1,
-    depthWrite: true,
-    depthTest: true
-  });
-  const asteroidGeometries = [];
-  for (let variant = 0; variant < ASTEROID_VARIANT_COUNT; variant += 1) {
-    const geometry = new THREE.IcosahedronGeometry(1, 2);
+  const craterDirection = new THREE.Vector3();
+  for (let index = 0; index < ASTEROID_SAMPLE_COUNT; index += 1) {
+    const random = (offset) => seededRandom(index * 17.37 + offset);
+    const geometry = new THREE.IcosahedronGeometry(1, 3);
+    const craters = Array.from({ length: 3 + Math.floor(random(7) * 4) }, (_, craterIndex) => {
+      craterDirection.set(
+        random(20 + craterIndex * 3) * 2 - 1,
+        random(21 + craterIndex * 3) * 2 - 1,
+        random(22 + craterIndex * 3) * 2 - 1
+      ).normalize();
+      return {
+        direction: craterDirection.clone(),
+        radius: 0.07 + random(23 + craterIndex * 3) * 0.12,
+        depth: 0.08 + random(24 + craterIndex * 3) * 0.12
+      };
+    });
     const positions = geometry.getAttribute('position');
     for (let vertex = 0; vertex < positions.count; vertex += 1) {
       const x = positions.getX(vertex);
       const y = positions.getY(vertex);
       const z = positions.getZ(vertex);
       const direction = new THREE.Vector3(x, y, z).normalize();
-      const broadForm = 0.86 + seededRandom(variant * 101 + vertex * 13) * 0.24;
-      const ridge = Math.sin(direction.x * 7.1 + variant) * Math.cos(direction.z * 5.7 - variant * 0.4) * 0.07;
-      const radius = broadForm + ridge;
+      let radius = 0.78 + random(30 + vertex * 1.7) * 0.38;
+      craters.forEach((crater) => {
+        const angularDistance = 1 - direction.dot(crater.direction);
+        const craterEdge = Math.max(0, 1 - angularDistance / crater.radius);
+        radius -= crater.depth * craterEdge * craterEdge;
+      });
       positions.setXYZ(vertex, x * radius, y * radius, z * radius);
     }
     positions.needsUpdate = true;
     geometry.computeVertexNormals();
     geometry.computeBoundingSphere();
-    asteroidGeometries.push(geometry);
-  }
-
-  for (let index = 0; index < ASTEROID_SAMPLE_COUNT; index += 1) {
-    const random = (offset) => seededRandom(index * 17.37 + offset);
     const radiusAu = 2.15 + random(1) * 1.1;
     const eccentricity = 0.015 + random(2) * 0.12;
     const inclination = (random(3) - 0.5) * THREE.MathUtils.degToRad(14);
     const node = random(4) * Math.PI * 2;
     const phase = random(5) * Math.PI * 2;
     const periodDays = Math.sqrt(radiusAu ** 3) * 365.256;
-    const radiusKm = 0.08 + (random(6) ** 2.8) * 34;
-    const variant = index % ASTEROID_VARIANT_COUNT;
-    const mesh = new THREE.Mesh(asteroidGeometries[variant], material.clone());
+    const radiusKm = 0.08 + (random(6) ** 2.35) * 28;
+    const material = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(0.07, 0.08 + random(40) * 0.12, 0.27 + random(41) * 0.2),
+      roughness: 0.93,
+      metalness: 0.02,
+      flatShading: true,
+      transparent: false,
+      depthWrite: true,
+      depthTest: true
+    });
+    const mesh = new THREE.Mesh(geometry, material);
     mesh.userData.radiusKm = radiusKm;
     mesh.userData.index = index;
     mesh.scale.set(1, 1, 1);
     asteroidBelt.meshes.push(mesh);
     scene.add(mesh);
-    asteroidBelt.particles[index] = { radiusAu, eccentricity, inclination, node, phase, periodDays, radiusKm, variant, mesh };
+    asteroidBelt.particles[index] = { radiusAu, eccentricity, inclination, node, phase, periodDays, radiusKm, mesh };
   }
 }
 
