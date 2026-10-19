@@ -19,7 +19,51 @@ export function fallbackPosition(body, date) {
   const xOrbital = body.a * (Math.cos(eccentricAnomaly) - eccentricity);
   const yOrbital = body.a * Math.sqrt(1 - eccentricity ** 2) * Math.sin(eccentricAnomaly);
   const orientation = (phase * Math.PI) / 180;
-  return { x: xOrbital * Math.cos(orientation) - yOrbital * Math.sin(orientation), y: 0, z: xOrbital * Math.sin(orientation) + yOrbital * Math.cos(orientation) };
+  const inclination = orbitalInclination(body) * Math.PI / 180;
+  const node = orbitalNode(body) * Math.PI / 180;
+  const xPlane = xOrbital * Math.cos(orientation) - yOrbital * Math.sin(orientation);
+  const zPlane = xOrbital * Math.sin(orientation) + yOrbital * Math.cos(orientation);
+  return {
+    x: xPlane * Math.cos(node) - zPlane * Math.sin(node) * Math.cos(inclination),
+    y: zPlane * Math.sin(inclination),
+    z: xPlane * Math.sin(node) + zPlane * Math.cos(node) * Math.cos(inclination)
+  };
+}
+
+const knownMoonInclinations = {
+  'earth-moon': 5.145,
+  'mars-phobos': 1.093,
+  'mars-deimos': 1.793,
+  'jupiter-io': 0.036,
+  'jupiter-europa': 0.466,
+  'jupiter-ganymede': 0.177,
+  'jupiter-callisto': 0.192,
+  'saturn-titan': 0.348,
+  'saturn-iapetus': 15.47,
+  'uranus-miranda': 4.338,
+  'neptune-triton': 156.865
+};
+
+function orbitalInclination(body) {
+  if (Number.isFinite(body.inclinationDeg)) return body.inclinationDeg;
+  if (knownMoonInclinations[body.id] !== undefined) return knownMoonInclinations[body.id];
+  if (body.type !== 'moon') return 0;
+  const parent = bodyById.get(body.parent);
+  const parentTilt = parent?.id === 'uranus' ? 82.2 : 0;
+  const semimajorAxis = Number(body.a);
+  if (Number.isFinite(semimajorAxis) && semimajorAxis > 0.02) return 12 + stableOrbitNoise(body.id) * 20 + parentTilt;
+  return 0.3 + stableOrbitNoise(body.id) * 2.2 + parentTilt;
+}
+
+function orbitalNode(body) {
+  if (Number.isFinite(body.nodeDeg)) return body.nodeDeg;
+  return (stableOrbitNoise(`${body.id}-node`) * 360) - 180;
+}
+
+function stableOrbitNoise(value) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+  return (hash >>> 0) / 4294967295;
 }
 
 function solveEccentricAnomaly(meanAnomaly, eccentricity) {
